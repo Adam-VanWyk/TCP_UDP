@@ -1,6 +1,7 @@
 from graph import GraphManager
 from renderer import Renderer
 from simulation import Message
+import networkx as nx
 import pygame
 
 def get_user_graph():
@@ -52,7 +53,13 @@ def main():
                         print(f"Selected first node: {selected_node}")
                     else:
                         print(f"Sending message: {selected_node} → {clicked}")
-                        messages.append(Message(selected_node, clicked))
+                        #messages.append(Message(selected_node, clicked)) try node paths
+                        try:
+                            path = nx.shortest_path(gm.graph, selected_node, clicked)
+                            print(f"Path: {path}")
+                            messages.append(Message(path))
+                        except nx.NetworkXNoPath:
+                            print("No path.")
                         selected_node = None
 
         # Update messages

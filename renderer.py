@@ -33,8 +33,12 @@ class Renderer:
 
         # Draw messages
         for msg in messages:
-            start_pos = self._to_screen(self.graph_manager.pos[msg.start])
-            end_pos = self._to_screen(self.graph_manager.pos[msg.end])
+            #start_pos = self._to_screen(self.graph_manager.pos[msg.start])
+            #end_pos = self._to_screen(self.graph_manager.pos[msg.end])
+
+            start_node, end_node = msg.get_current_edge()
+            start_pos = self._to_screen(self.graph_manager.pos[start_node])
+            end_pos = self._to_screen(self.graph_manager.pos[end_node])
 
             x = start_pos[0] + (end_pos[0] - start_pos[0]) * msg.progress
             y = start_pos[1] + (end_pos[1] - start_pos[1]) * msg.progress
