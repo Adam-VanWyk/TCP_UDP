@@ -1,8 +1,9 @@
 import pygame
+import math
 
 WIDTH, HEIGHT = 800, 600
 NODE_RADIUS = 15
-
+# Pygame class to control locational logic
 class Renderer:
     def __init__(self, graph_manager):
         pygame.init()
@@ -37,6 +38,15 @@ class Renderer:
 
         pygame.display.flip()
         self.clock.tick(60)
+
+    # Adding user input by clicking nodes to apply messages
+    def get_clicked_node(self, mouse_pos):
+        for node in self.graph_manager.graph.nodes():
+            node_pos = self._to_screen(self.graph_manager.pos[node])
+            dist = math.dist(mouse_pos, node_pos)
+            if dist <= NODE_RADIUS:
+                return None
+        return None
 
     def _to_screen(self, pos):
         x = int(pos[0] * 300 + WIDTH // 2)

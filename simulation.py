@@ -1,3 +1,4 @@
+# Class for messages and their atributes
 
 class Message:
     def __init__(self, start, end, speed=0.01):

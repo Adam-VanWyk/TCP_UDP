@@ -1,3 +1,4 @@
+# Class for graph management from networkx
 
 import networkx as nx 
 
