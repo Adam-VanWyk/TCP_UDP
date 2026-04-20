@@ -36,7 +36,11 @@ class Renderer:
             #start_pos = self._to_screen(self.graph_manager.pos[msg.start])
             #end_pos = self._to_screen(self.graph_manager.pos[msg.end])
 
-            start_node, end_node = msg.get_current_edge()
+            edge = msg.get_current_edge()
+            if edge is None:
+                continue
+            start_node, end_node = edge
+            
             start_pos = self._to_screen(self.graph_manager.pos[start_node])
             end_pos = self._to_screen(self.graph_manager.pos[end_node])
 

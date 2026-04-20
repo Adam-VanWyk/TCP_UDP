@@ -52,20 +52,47 @@ def main():
                         selected_node = clicked
                         print(f"Selected first node: {selected_node}")
                     else:
+                        if selected_node == clicked:
+                            print("same node, ignore")
+                            selected_node = None
+                            continue
                         print(f"Sending message: {selected_node} → {clicked}")
                         #messages.append(Message(selected_node, clicked)) try node paths
                         try:
                             path = nx.shortest_path(gm.graph, selected_node, clicked)
                             print(f"Path: {path}")
-                            messages.append(Message(path))
+                            #messages.append(Message(path))
+                            msg = Message(path)
+                            start_node = path[0]
+                            gm.queues[start_node].append(msg)
                         except nx.NetworkXNoPath:
                             print("No path.")
                         selected_node = None
+        # Queue handling
+        for node in gm.queues:
+            queue = gm.queues[node]
+            if queue:
+                msg = queue[0]
+                done = msg.update()
 
-        # Update messages
+                if msg.state == "moving":
+                    messages.append(msg)
+                    queue.pop(0)
+                elif done:
+                    queue.pop(0)
+
+        # message movement
         for msg in messages[:]:
-            if msg.update():
+            done = msg.update()
+
+            if done:
                 messages.remove(msg)
+                print("Message delivered")
+            else:
+                if msg.progress == 0.0 and msg.state == "waiting":
+                    messages.remove(msg)
+                    next_node = msg.path[msg.current_index]
+                    gm.queues[next_node].append(msg)
 
         renderer.draw(messages, selected_node)
 

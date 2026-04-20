@@ -12,6 +12,7 @@ class GraphManager:
         self.graph.add_nodes_from(range(num_nodes))
         self.graph.add_edges_from(edges)
         self.pos = nx.spring_layout(self.graph)
+        self.queues = {node: [] for node in self.graph.nodes()}
 
     def get_neighbors(self, node):
         return list(self.graph.neighbors(node))
