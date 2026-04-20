@@ -2,7 +2,7 @@ import pygame
 import math
 
 WIDTH, HEIGHT = 800, 600
-NODE_RADIUS = 15
+NODE_RADIUS = 25
 # Pygame class to control locational logic
 class Renderer:
     def __init__(self, graph_manager):
@@ -12,7 +12,7 @@ class Renderer:
         self.clock = pygame.time.Clock()
         self.graph_manager = graph_manager
 
-    def draw(self, messages):
+    def draw(self, messages, selected_node=None):
         self.screen.fill((30, 30, 30))
 
     # Draw edges
@@ -24,6 +24,11 @@ class Renderer:
     # Draw nodes
         for node in self.graph_manager.graph.nodes():
             pos = self._to_screen(self.graph_manager.pos[node])
+
+            color = (100, 200, 255)
+            if node == selected_node:
+                color = (255, 255, 100)
+
             pygame.draw.circle(self.screen, (100, 200, 255), pos, NODE_RADIUS)
 
         # Draw messages
@@ -44,8 +49,14 @@ class Renderer:
         for node in self.graph_manager.graph.nodes():
             node_pos = self._to_screen(self.graph_manager.pos[node])
             dist = math.dist(mouse_pos, node_pos)
+
+            print(f"Mouse: {mouse_pos}, Node: {node}: {node_pos}, Dist: {dist}")
+
             if dist <= NODE_RADIUS:
-                return None
+                print(f"Clicked node {node}")
+                return node
+            
+        print("\n")
         return None
 
     def _to_screen(self, pos):

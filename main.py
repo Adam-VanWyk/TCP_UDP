@@ -49,7 +49,9 @@ def main():
                 if clicked is not None:
                     if selected_node is None:
                         selected_node = clicked
+                        print(f"Selected first node: {selected_node}")
                     else:
+                        print(f"Sending message: {selected_node} → {clicked}")
                         messages.append(Message(selected_node, clicked))
                         selected_node = None
 
@@ -58,7 +60,7 @@ def main():
             if msg.update():
                 messages.remove(msg)
 
-        renderer.draw(messages)
+        renderer.draw(messages, selected_node)
 
     pygame.quit()
 
