@@ -62,7 +62,8 @@ def main():
                             path = nx.shortest_path(gm.graph, selected_node, clicked)
                             print(f"Path: {path}")
                             #messages.append(Message(path))
-                            msg = Message(path)
+                            msg = Message(path, gm)
+                            gm.stats["sent"] += 1
                             start_node = path[0]
                             gm.queues[start_node].append(msg)
                         except nx.NetworkXNoPath:
@@ -87,6 +88,7 @@ def main():
 
             if done:
                 messages.remove(msg)
+                gm.stats["delivered"] += 1
                 print("Message delivered")
             else:
                 if msg.progress == 0.0 and msg.state == "waiting":
@@ -95,6 +97,13 @@ def main():
                     gm.queues[next_node].append(msg)
 
         renderer.draw(messages, selected_node)
+
+        # print(
+        #     f"Sent: {gm.stats['sent']} | "
+        #     f"Delivered: {gm.stats['delivered']} | "
+        #     f"Dropped: {gm.stats['dropped']}"
+
+        # )
 
     pygame.quit()
 

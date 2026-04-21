@@ -11,6 +11,7 @@ class Renderer:
         pygame.display.set_caption("Graph Visualizer")
         self.clock = pygame.time.Clock()
         self.graph_manager = graph_manager
+        self.font = pygame.font.SysFont(None, 24)
 
     def draw(self, messages, selected_node=None):
         self.screen.fill((30, 30, 30))
@@ -29,7 +30,7 @@ class Renderer:
             if node == selected_node:
                 color = (255, 255, 100)
 
-            pygame.draw.circle(self.screen, (100, 200, 255), pos, NODE_RADIUS)
+            pygame.draw.circle(self.screen, color, pos, NODE_RADIUS)
 
         # Draw messages
         for msg in messages:
@@ -49,6 +50,26 @@ class Renderer:
 
             pygame.draw.circle(self.screen, (255, 100, 100), (int(x), int(y)), 6)
 
+        # draw stats 
+        stats = self.graph_manager.stats
+
+        sent = stats["sent"]
+        delivered = stats["delivered"]
+        dropped = stats["dropped"]
+
+        delivery_rate = (delivered / sent * 100) if sent > 0 else 0
+
+        lines = [
+            f"Sent: {sent}",
+            f"Delivered: {delivered}",
+            f"Dropped: {dropped}",
+            f"Delivery Rate: {delivery_rate:.1f}%"
+        ]
+        pygame.draw.rect(self.screen, (0, 0, 0), (5, 5, 180, 90), border_radius=8)
+
+        for i, line in enumerate(lines):
+            text_surface = self.font.render(line, True, (255, 255, 255))
+            self.screen.blit(text_surface, (10, 10 + i * 20))
         pygame.display.flip()
         self.clock.tick(60)
 
