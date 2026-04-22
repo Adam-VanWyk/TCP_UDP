@@ -55,3 +55,22 @@ class Message:
             self.path[self.current_index],
             self.path[self.current_index+1]
         )
+    
+
+class Packet:
+    def __init__(self, path, msg_id):
+        self.path = path
+        self.msg_id = msg_id
+
+        self.current_index = 0
+        self.progress = 0.0
+
+        self.acknowledged = False
+        self.dropped = False
+
+    def get_current_edge(self):
+        if self.current_index >= len (self.path) - 1:
+            return None
+        return (self.path[self.current_index],
+                self.path[self.current_index + 1])
+    

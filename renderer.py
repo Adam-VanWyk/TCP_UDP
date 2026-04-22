@@ -34,9 +34,10 @@ class Renderer:
 
         # Draw messages
         for msg in messages:
-            #start_pos = self._to_screen(self.graph_manager.pos[msg.start])
-            #end_pos = self._to_screen(self.graph_manager.pos[msg.end])
-
+            print("DEGBUG packet state", msg.current_index, msg.path)
+            edge = msg.get_current_edge()
+            print("DEBUG edge:", edge)
+            
             edge = msg.get_current_edge()
             if edge is None:
                 continue
