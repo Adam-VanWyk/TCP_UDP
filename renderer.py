@@ -60,6 +60,7 @@ class Renderer:
         delivery_rate = (delivered / sent * 100) if sent > 0 else 0
 
         lines = [
+            f"Mode: {self.graph_manager.network_mode.upper()}",
             f"Sent: {sent}",
             f"Delivered: {delivered}",
             f"Dropped: {dropped}",
