@@ -45,11 +45,12 @@ def main():
                 running = False
 
             if event.type == pygame.KEYDOWN:
-                gm.set_network_mode("low")
-            elif event.type == pygame.K_2:
-                gm.set_network_mode("medium")
-            elif event.type == pygame.K_3:
-                gm.set_network_mode("high")
+                if event.key == pygame.K_1:
+                    gm.set_network_mode("low")
+                elif event.key == pygame.K_2:
+                    gm.set_network_mode("medium")
+                elif event.key == pygame.K_3:
+                    gm.set_network_mode("high")
 
             if event.type == pygame.MOUSEBUTTONDOWN:
                 clicked = renderer.get_clicked_node(pygame.mouse.get_pos())

@@ -42,11 +42,27 @@ class GraphManager:
             self.edge_loss[(u, v)] = loss
             self.edge_loss[(v, u)] = loss
 
+    def apply_network_conditions(self):
+        profile = self.network_profiles[self.network_mode]
+
+        self.edge_latency = {}
+        self.edge_loss = {}
+
+        for u, v in self.graph.edges():
+            latency = random.uniform(*profile["latency"])
+            loss = profile["loss"]
+
+            self.edge_latency[(u, v)] = latency
+            self.edge_latency[(v, u)] = latency
+
+            self.edge_loss[(u, v)] = loss
+            self.edge_loss[(v, u)] = loss
+
     def set_network_mode(self, mode):
         if mode in self.network_profiles:
             self.network_mode = mode
             print(f"Switched to {mode} network condition")
-            self.create_graph(len(self.graph.nodes()), list(self.graph.edges()))
+            self.apply_network_conditions()
 
     def get_neighbors(self, node):
         return list(self.graph.neighbors(node))
