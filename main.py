@@ -94,33 +94,7 @@ def main():
                         except nx.NetworkXNoPath:
                             print("No path.")
                         selected_node = None
-        # Queue handling
-        # for node in gm.queues:
-        #     queue = gm.queues[node]
-        #     if queue:
-        #         msg = queue[0]
-        #         done = msg.update()
-
-        #         if msg.state == "moving":
-        #             messages.append(msg)
-        #             queue.pop(0)
-        #         elif done:
-        #             queue.pop(0)
-
-        # # message movement
-        # for msg in messages[:]:
-        #     done = msg.update()
-
-        #     if done:
-        #         messages.remove(msg)
-        #         gm.stats["delivered"] += 1
-        #         print("Message delivered")
-        #     else:
-        #         if msg.progress == 0.0 and msg.state == "waiting":
-        #             messages.remove(msg)
-        #             next_node = msg.path[msg.current_index]
-        #             gm.queues[next_node].append(msg)
-
+        
         for packet in packets[:]:
             result = transport.update(packet, gm)
 
@@ -137,7 +111,7 @@ def main():
             end = packet.path[packet.current_index + 1]
 
             latency = gm.edge_latency[(start, end)]
-            packet.progress += 0.1 / latency
+            packet.progress += 0.005 / latency
 
 
             if packet.progress >= 1.0:

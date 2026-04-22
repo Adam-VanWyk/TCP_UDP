@@ -2,7 +2,7 @@
 import random
 
 class Message:
-    def __init__(self, path, graph_manager, speed=0.01, wait_time=30):
+    def __init__(self, path, graph_manager, speed=0.001, wait_time=30):
         self.path = path
         self.graph_manager = graph_manager
         self.current_index = 0
@@ -67,6 +67,8 @@ class Packet:
 
         self.acknowledged = False
         self.dropped = False
+
+        self.checked_edges = set()
 
     def get_current_edge(self):
         if self.current_index >= len (self.path) - 1:

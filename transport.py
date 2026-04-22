@@ -12,15 +12,18 @@ class Protocol:
 
 class UDPProtocol:
     def send(self, packet, network):
-        return packet  # must exist
+        return packet  
 
     def update(self, packet, network):
         start = packet.path[packet.current_index]
         end = packet.path[packet.current_index + 1]
+        edge = (start, end)
 
-        if random.random() < network.edge_loss[(start, end)]:
-            packet.dropped = True
-            return "dropped"
+        if edge not in packet.checked_edges:
+            packet.checked_edges.add(edge)
+            if random.random() < network.edge_loss[edge]:
+                packet.dropped = True
+                return "dropped"
 
         return "ok"
     
@@ -35,11 +38,19 @@ class TCPProtocol:
     def update(self, packet, network):
         start = packet.path[packet.current_index]
         end = packet.path[packet.current_index + 1]
+        edge = (start, end)
 
-        if random.random() < network.edge_loss[(start, end)]:
-            self.retries[packet.msg_id] += 1
+        if edge not in packet.checked_edges:
+            packet.checked_edges.add(edge)
+            if random.random() < network.edge_loss[(start, end)]:
+                self.retries[packet.msg_id] += 1
+                retries = self.retries[packet.msg_id]
+                if retries >= 5:
+                    return "dropped"
+                packet.checked_edges.discard(edge)
             return "retransmitting"
-
+        
+        self.retries[packet.msg_id] = 0
         return "ok"
 
 class TransportLayer:
