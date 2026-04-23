@@ -30,7 +30,7 @@ class UDPProtocol:
     
 class TCPProtocol:
     MAX_RETRIES = 5
-    DEFAULT_RTT = 15000
+    DEFAULT_RTT = 8000
     RTT_MULTIPLIER = 1.5
     def __init__(self):
         self.retries = {}

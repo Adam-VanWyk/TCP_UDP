@@ -18,7 +18,7 @@ class GraphManager:
 
         self.network_profiles = {
             "low": {"loss": 0.05, "latency": (0.5, 1.0),  "corruption": 0.05},
-            "medium": {"loss": 0.15, "latency": (0.5, 1.5),  "corruption": 0.15},
+            "medium": {"loss": 0.10, "latency": (0.5, 1.5),  "corruption": 0.15},
             "high": {"loss": 0.30, "latency": (1.0, 1.5),  "corruption": 0.60}
         }
         self.current_protocol = "udp"
