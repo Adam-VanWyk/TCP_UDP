@@ -58,17 +58,25 @@ class Message:
     
 
 class Packet:
-    def __init__(self, path, msg_id):
+    def __init__(self, path, msg_id, packet_type="UDP", payload=None):
         self.path = path
         self.msg_id = msg_id
+        self.packet_type = packet_type
+        self.payload = payload
 
         self.current_index = 0
         self.progress = 0.0
 
         self.acknowledged = False
         self.dropped = False
-
+        self.corrupted = False
         self.checked_edges = set()
+
+        self.locked = False
+        self.triggers_id = None
+        self.handshake_complete = True
+        self.original_msg_id = None
+        self.retransmit_count = 0
 
     def get_current_edge(self):
         if self.current_index >= len (self.path) - 1:

@@ -5,7 +5,7 @@ from transport import TransportLayer, UDPProtocol, TCPProtocol
 
 import networkx as nx
 import pygame
-
+import random
 
 
 def get_user_graph():
@@ -32,6 +32,7 @@ def get_user_graph():
 
 def main():
     gm = GraphManager()
+    gm.current_protocol = "udp"
     transport = TransportLayer(UDPProtocol()) # basic
 
     #Get user input for graph creation
@@ -40,7 +41,6 @@ def main():
 
     renderer = Renderer(gm)
     packets = []
-
     selected_node = None
 # main loop of game/interaction -----------------------------------------
     running = True
@@ -59,9 +59,11 @@ def main():
                 
                 elif event.key == pygame.K_u:
                     transport.protocol = UDPProtocol()
+                    gm.current_protocol = "udp"
                     print("Using UDP")
                 elif event.key == pygame.K_t:
                     transport.protocol = TCPProtocol()
+                    gm.current_protocol = "tcp"
                     print("Using TCP")
 
             if event.type == pygame.MOUSEBUTTONDOWN:
@@ -81,61 +83,97 @@ def main():
                         try:
                             path = nx.shortest_path(gm.graph, selected_node, clicked)
                             print(f"Path: {path}")
-                            #messages.append(Message(path))
-                            #msg = Message(path, gm)
-                            packet = Packet(path, msg_id=id(path))
-                            transport.send(packet, gm)
-
+                            
+                            packet = Packet(path, msg_id=id(path),
+                                             payload="")
                             gm.stats["sent"] += 1
-                            start_node = path[0]
+                            new_packets = transport.send(packet, gm)
+                            packets.extend(new_packets)
 
-                            packets.append(packet)
-                            #gm.queues[start_node].append(packet)
                         except nx.NetworkXNoPath:
                             print("No path.")
                         selected_node = None
         
         for packet in packets[:]:
-            result = transport.update(packet, gm)
+            result, spawned = transport.update(packet, gm)
+            packets.extend(spawned)
 
             if result == "dropped":
                 packets.remove(packet)
                 gm.stats["dropped"] += 1
+                # Still unlock next in chain even on drop
+                if packet.triggers_id:
+                    for p in packets:
+                        if p.msg_id == packet.triggers_id:
+                            p.locked = False
+                            if p.packet_type == "TCP_DATA":
+                                p.handshake_complete = True
                 continue
 
-            if result == "retransmitting":
+            if result in ("retransmitting", "waiting"):
                 packet.progress = 0.0
                 continue
-            
-            start = packet.path[packet.current_index]
-            end = packet.path[packet.current_index + 1]
 
+            if packet.current_index >= len(packet.path) - 1:
+                continue
+
+            start   = packet.path[packet.current_index]
+            end     = packet.path[packet.current_index + 1]
             latency = gm.edge_latency[(start, end)]
-            packet.progress += 0.005 / latency
-
+            packet.progress += 0.007 / latency
 
             if packet.progress >= 1.0:
                 packet.progress = 0.0
                 packet.current_index += 1
 
             if packet.current_index >= len(packet.path) - 1:
-                packets.remove(packet)
-                gm.stats["delivered"] += 1
+                if packet.packet_type == "TCP_DATA":
+                    edge = (packet.path[-2], packet.path[-1])
+                    if random.random() < gm.edge_corruption[edge]:
+                        packet.corrupted = True
+                        print(f"Packet {packet.payload} corrupted on arrival!")
 
-            #packet.step_forward(gm)     
-        # re-queue behavior (keeps your visual system working)
-                # messages.remove(packet)
-                # next_node = packet.path[packet.current_index]
-                # gm.queues[next_node].append(packet)
+                #packet.skip_corruption = False
+                if packet.corrupted:
+            # Send NACK back to sender
+                    nack_path = list(reversed(packet.path))
+                    nack = Packet(
+                        nack_path,
+                        msg_id=str(packet.msg_id) + "_nack",
+                        packet_type="TCP_NACK"
+                    )
+                    nack.original_msg_id = packet.msg_id
+                    packets.append(nack)
+                    packet.locked = True
+                    packet.corrupted = False
+                    packet.retransmit_count += 1
+                    print(f"NACK sent, retransmitting {packet.payload}")
+                elif packet.packet_type == "TCP_NACK":
+                    packets.remove(packet)
+                    print(f"NACK received at sender, data already retransmitting")
+                    for p in packets:
+                        if p.msg_id == packet.original_msg_id:
+                            p.locked = False
+                            p.current_index = 0
+                            p.progress = 0.0
+                            p.checked_edges.clear()
+                            print(f"Resending {p.payload}")
+                            break
+
+                else:
+                    packets.remove(packet)
+                    if packet.packet_type in ("UDP", "TCP_DATA"):
+                        gm.stats["delivered"] += 1
+                        if packet.payload:
+                            print(f"Delivered: '{packet.payload}' via {packet.packet_type}")
+                    if packet.triggers_id:
+                        for p in packets:
+                            if p.msg_id == packet.triggers_id:
+                                p.locked = False
+                                if p.packet_type == "TCP_DATA":
+                                    p.handshake_complete = True
 
         renderer.draw(packets, selected_node)
-
-        # print(
-        #     f"Sent: {gm.stats['sent']} | "
-        #     f"Delivered: {gm.stats['delivered']} | "
-        #     f"Dropped: {gm.stats['dropped']}"
-
-        # )
 
     pygame.quit()
 

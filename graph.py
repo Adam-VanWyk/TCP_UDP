@@ -14,12 +14,14 @@ class GraphManager:
         }
 
         self.network_mode = "medium"
+        self.edge_corruption = {}
 
         self.network_profiles = {
-            "low": {"loss": 0.05, "latency": (0.5, 1.0)},
-            "medium": {"loss": 0.15, "latency": (0.5, 2.0)},
-            "high": {"loss": 0.30, "latency": (1.0, 3.0)}
+            "low": {"loss": 0.05, "latency": (0.5, 1.0),  "corruption": 0.05},
+            "medium": {"loss": 0.15, "latency": (0.5, 1.5),  "corruption": 0.15},
+            "high": {"loss": 0.30, "latency": (1.0, 1.5),  "corruption": 0.60}
         }
+        self.current_protocol = "udp"
 
     def create_graph(self, num_nodes, edges):
         self.graph.clear()
@@ -35,12 +37,14 @@ class GraphManager:
         for u, v in self.graph.edges():
             latency = random.uniform(*profile["latency"])
             loss = profile["loss"]
+            corruption = profile["corruption"]
 
             self.edge_latency[(u, v)] = latency
             self.edge_latency[(v, u)] = latency
-
             self.edge_loss[(u, v)] = loss
             self.edge_loss[(v, u)] = loss
+            self.edge_corruption[(u, v)] = corruption
+            self.edge_corruption[(v, u)] = corruption
 
     def apply_network_conditions(self):
         profile = self.network_profiles[self.network_mode]
@@ -51,12 +55,14 @@ class GraphManager:
         for u, v in self.graph.edges():
             latency = random.uniform(*profile["latency"])
             loss = profile["loss"]
+            corruption = profile["corruption"]
 
             self.edge_latency[(u, v)] = latency
             self.edge_latency[(v, u)] = latency
-
             self.edge_loss[(u, v)] = loss
             self.edge_loss[(v, u)] = loss
+            self.edge_corruption[(u, v)] = corruption
+            self.edge_corruption[(v, u)] = corruption
 
     def set_network_mode(self, mode):
         if mode in self.network_profiles:
