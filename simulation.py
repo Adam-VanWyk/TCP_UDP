@@ -78,6 +78,14 @@ class Packet:
         self.original_msg_id = None
         self.retransmit_count = 0
 
+        self.seq_num = 0
+        self.ack_num = 0
+
+        self.original_sent_time = None
+        self.sent_time = None
+        self.ack_received = False
+        self.retransmit_cooldown = 0
+
     def get_current_edge(self):
         if self.current_index >= len (self.path) - 1:
             return None

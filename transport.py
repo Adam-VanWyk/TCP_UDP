@@ -30,10 +30,30 @@ class UDPProtocol:
     
 class TCPProtocol:
     MAX_RETRIES = 5
+    DEFAULT_RTT = 15000
+    RTT_MULTIPLIER = 1.5
     def __init__(self):
         self.retries = {}
         self.connections = set()
         self.connection_msg_count = {}
+        self.connection_seq_num = {}
+        self.connection_rtt = {}        
+        self.connection_rtt_samples = {}
+
+    def record_rtt(self, connection, rtt_sample):
+        if connection not in self.connection_rtt_samples:
+            self.connection_rtt_samples[connection] = []
+        self.connection_rtt_samples[connection].append(rtt_sample)
+        # Rolling average over last 5 samples
+        samples = self.connection_rtt_samples[connection][-5:]
+        self.connection_rtt[connection] = sum(samples) / len(samples)
+        print(f"RTT sample: {rtt_sample:.0f}ms, avg RTT: {self.connection_rtt[connection]:.0f}ms")
+
+    def get_timeout(self, connection):
+        if connection not in self.connection_rtt:
+            return self.DEFAULT_RTT
+        return self.connection_rtt[connection] * self.RTT_MULTIPLIER
+
 
     def send(self, packet, network):
         self.retries[packet.msg_id] = 0
@@ -44,10 +64,15 @@ class TCPProtocol:
 
         if connection not in self.connection_msg_count:
             self.connection_msg_count[connection] = 0
+            self.connection_seq_num[connection] = 0
+
         self.connection_msg_count[connection] += 1
+        self.connection_seq_num[connection] += 1
         msg_num = self.connection_msg_count[connection]
+        seq_num = self.connection_seq_num[connection]
 
         packet.payload = f"MSG {msg_num} ({src}→{dst})"
+        packet.seq_num = seq_num
 
         if connection in self.connections:
             print(f"Connection {src}↔{dst} already established, skipping handshake")
@@ -55,7 +80,8 @@ class TCPProtocol:
             packet.locked = False
             packet.handshake_complete = True
             return [packet]
-
+        
+        print(f"New connection {src}↔{dst}, starting handshake")
         path = packet.path
         reverse = list(reversed(path))
         base_id = packet.msg_id
@@ -82,6 +108,10 @@ class TCPProtocol:
         if packet.locked:
             return "waiting", []
         
+        if packet.retransmit_cooldown > 0:
+            packet.retransmit_cooldown -= 1
+            return "waiting", []
+
         if packet.packet_type != "TCP_DATA":
             return "ok", []
 
@@ -100,6 +130,10 @@ class TCPProtocol:
                 if retries >= self.MAX_RETRIES:
                     return "dropped", []
                 packet.checked_edges.discard(edge)
+                packet.progress = 0.0
+                connection = frozenset({packet.path[0], packet.path[-1]})
+                timeout_ms = self.get_timeout(connection)
+                packet.retransmit_cooldown = int(timeout_ms / 1000 * 60)
                 return "retransmitting", []
 
         return "ok", []

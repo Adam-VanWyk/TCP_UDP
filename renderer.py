@@ -74,8 +74,12 @@ class Renderer:
 
             # Draw label above packet
             label_text = {
-                "UDP": "UDP", "TCP_SYN": "SYN", "TCP_SYN_ACK": "SYN-ACK",
-                "TCP_DATA": packet.payload or "DATA", "TCP_ACK": "ACK", "TCP_NACK": "NACK"
+                "UDP": "UDP", 
+                "TCP_SYN": "SYN", 
+                "TCP_SYN_ACK": "SYN-ACK",
+                "TCP_DATA": packet.payload or "DATA", 
+                "TCP_ACK": packet.payload if packet.payload else "ACK", 
+                "TCP_NACK": packet.payload if packet.payload else "NACK"
             }.get(ptype, "")
             if label_text:
                 surf = self.font.render(label_text, True, (255, 255, 255))
@@ -91,14 +95,14 @@ class Renderer:
         delivery_rate = (delivered / sent * 100) if sent > 0 else 0
         
         lines = [
-            f"Protocol: {self.graph_manager.current_protocol.upper()}"
+            f"Protocol: {self.graph_manager.current_protocol.upper()}",
             f"Mode: {self.graph_manager.network_mode.upper()}",
             f"Sent: {sent}",
             f"Delivered: {delivered}",
             f"Dropped: {dropped}",
             f"Delivery Rate: {delivery_rate:.1f}%"
         ]
-        pygame.draw.rect(self.screen, (0, 0, 0), (5, 5, 260, 75), border_radius=8)
+        pygame.draw.rect(self.screen, (0, 0, 0), (5, 5, 260, 120), border_radius=8)
 
         for i, line in enumerate(lines):
             text_surface = self.font.render(line, True, (255, 255, 255))

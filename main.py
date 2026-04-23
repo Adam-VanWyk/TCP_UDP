@@ -94,6 +94,26 @@ def main():
                             print("No path.")
                         selected_node = None
         
+        now = pygame.time.get_ticks()
+        if isinstance(transport.protocol, TCPProtocol):
+            for packet in packets:
+                if packet.packet_type == "TCP_DATA" and not packet.locked:
+                    if packet.sent_time is None:
+                        packet.sent_time = now
+                        packet.original_sent_time = now
+                        continue
+                    connection = frozenset({packet.path[0], packet.path[-1]})
+                    timeout = transport.protocol.get_timeout(connection)
+                    elapsed = now - packet.sent_time
+                    if elapsed > timeout and not packet.ack_received:
+                        print(f"TIMEOUT on {packet.payload} after {elapsed:.0f}ms, resending")
+                        packet.current_index = 0
+                        packet.progress = 0.0
+                        packet.checked_edges.clear()
+                        packet.sent_time = now   # reset timer for retransmit
+                        packet.retransmit_count += 1
+
+
         for packet in packets[:]:
             result, spawned = transport.update(packet, gm)
             packets.extend(spawned)
@@ -101,7 +121,6 @@ def main():
             if result == "dropped":
                 packets.remove(packet)
                 gm.stats["dropped"] += 1
-                # Still unlock next in chain even on drop
                 if packet.triggers_id:
                     for p in packets:
                         if p.msg_id == packet.triggers_id:
@@ -111,7 +130,7 @@ def main():
                 continue
 
             if result in ("retransmitting", "waiting"):
-                packet.progress = 0.0
+                #packet.progress = 0.0
                 continue
 
             if packet.current_index >= len(packet.path) - 1:
@@ -120,7 +139,11 @@ def main():
             start   = packet.path[packet.current_index]
             end     = packet.path[packet.current_index + 1]
             latency = gm.edge_latency[(start, end)]
-            packet.progress += 0.007 / latency
+            #packet.progress += 0.007 / latency
+
+            speed_ms = 2000
+            dt = renderer.clock.get_time()
+            packet.progress += dt / (speed_ms * latency)
 
             if packet.progress >= 1.0:
                 packet.progress = 0.0
@@ -143,11 +166,14 @@ def main():
                         packet_type="TCP_NACK"
                     )
                     nack.original_msg_id = packet.msg_id
+                    nack.seq_num = packet.seq_num
+                    nack.payload = f"NACK {packet.seq_num}"
                     packets.append(nack)
                     packet.locked = True
                     packet.corrupted = False
                     packet.retransmit_count += 1
                     print(f"NACK sent, retransmitting {packet.payload}")
+
                 elif packet.packet_type == "TCP_NACK":
                     packets.remove(packet)
                     print(f"NACK received at sender, data already retransmitting")
@@ -157,6 +183,7 @@ def main():
                             p.current_index = 0
                             p.progress = 0.0
                             p.checked_edges.clear()
+                            p.sent_time = now
                             print(f"Resending {p.payload}")
                             break
 
@@ -166,6 +193,30 @@ def main():
                         gm.stats["delivered"] += 1
                         if packet.payload:
                             print(f"Delivered: '{packet.payload}' via {packet.packet_type}")
+
+                        if packet.packet_type == "TCP_DATA":
+                            ack_path = list(reversed(packet.path))
+                            ack = Packet(
+                                ack_path,
+                                msg_id=str(packet.msg_id) + "_dataack",
+                                packet_type="TCP_ACK"
+                            )
+                            ack.ack_num = packet.seq_num + 1
+                            ack.payload = f"ACK {ack.ack_num}"
+                            ack.original_msg_id = packet.msg_id
+                            packets.append(ack)
+                            print(f"ACK {ack.ack_num} sent back to sender")
+
+                    elif packet.packet_type == "TCP_ACK" and packet.original_msg_id is not None:
+                            for p in packets:
+                                if p.msg_id == packet.original_msg_id:
+                                    if p.original_sent_time is not None:
+                                        rtt = now - p.original_sent_time
+                                        connection = frozenset({p.path[0], p.path[-1]})
+                                        transport.protocol.record_rtt(connection, rtt)
+                                    p.ack_received = True
+                                    break
+
                     if packet.triggers_id:
                         for p in packets:
                             if p.msg_id == packet.triggers_id:
