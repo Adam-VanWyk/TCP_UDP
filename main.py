@@ -1,6 +1,6 @@
 from graph import GraphManager
 from renderer import Renderer
-from simulation import Message, Packet
+from simulation import Packet
 from transport import TransportLayer, UDPProtocol, TCPProtocol
 
 import networkx as nx
@@ -79,7 +79,6 @@ def main():
                             selected_node = None
                             continue
                         print(f"Sending message: {selected_node} → {clicked}")
-                        #messages.append(Message(selected_node, clicked)) try node paths
                         try:
                             path = nx.shortest_path(gm.graph, selected_node, clicked)
                             print(f"Path: {path}")

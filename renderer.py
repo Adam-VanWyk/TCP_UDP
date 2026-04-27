@@ -32,7 +32,7 @@ class Renderer:
             label = self.font.render(str(node), True, (30, 30, 30))
             self.screen.blit(label, (pos[0] - label.get_width()//2, pos[1] - label.get_height()//2))
 
-        # Draw messages
+        # Draw packets
         for packet in packets:
             #print("DEGBUG packet state", msg.current_index, msg.path)
             edge = packet.get_current_edge()
